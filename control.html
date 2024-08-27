@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 BLE Client</title>
+    <title>BogieBot</title>
 </head>
 <body>
-    <h1>ESP32 BLE Client</h1>
-    <button id="connectButton">Connect to ESP32</button>
+    <h1>BogieBot</h1>
+    <button id="connectButton">Connect to BogieBot</button>
     <div id="status"></div>
     <div>
         <label for="messageInput">Message to send:</label>
@@ -20,8 +20,8 @@
     </div>
 
     <script>
-        const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-        const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+        const BOGIEBOT_BLE_SERVICE = "96f2414a-ab16-4aa4-8716-b7acfbac0adb";
+        const CMD_VEL = "8387ecb2-551e-4665-83e4-7f0fffd1f850";
 
         let bleDevice;
         let characteristic;
@@ -30,23 +30,23 @@
             try {
                 // Request the device
                 bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: [SERVICE_UUID] }]
+                    filters: [{ services: [BOGIEBOT_BLE_SERVICE] }]
                 });
 
                 // Connect to the GATT server
                 const server = await bleDevice.gatt.connect();
 
                 // Get the service
-                const service = await server.getPrimaryService(SERVICE_UUID);
+                const service = await server.getPrimaryService(BOGIEBOT_BLE_SERVICE);
 
                 // Get the characteristic
-                characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+                characteristic = await service.getCharacteristic(CMD_VEL);
 
                 // Setup event listener for receiving notifications
                 await characteristic.startNotifications();
                 characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
 
-                document.getElementById('status').innerText = "Connected to ESP32";
+                document.getElementById('status').innerText = "Connected to BogieBot";
             } catch (error) {
                 console.error('Connection failed!', error);
                 document.getElementById('status').innerText = "Failed to connect";
