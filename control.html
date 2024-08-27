@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 BLE Client</title>
+</head>
+<body>
+    <h1>ESP32 BLE Client</h1>
+    <button id="connectButton">Connect to ESP32</button>
+    <div id="status"></div>
+    <div>
+        <label for="messageInput">Message to send:</label>
+        <input type="text" id="messageInput" />
+        <button id="sendButton">Send</button>
+    </div>
+    <div>
+        <h3>Received Value:</h3>
+        <div id="receivedValue"></div>
+    </div>
+
+    <script>
+        const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+        const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+        let bleDevice;
+        let characteristic;
+
+        async function connectToBLE() {
+            try {
+                // Request the device
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [SERVICE_UUID] }]
+                });
+
+                // Connect to the GATT server
+                const server = await bleDevice.gatt.connect();
+
+                // Get the service
+                const service = await server.getPrimaryService(SERVICE_UUID);
+
+                // Get the characteristic
+                characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+                // Setup event listener for receiving notifications
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
+
+                document.getElementById('status').innerText = "Connected to ESP32";
+            } catch (error) {
+                console.error('Connection failed!', error);
+                document.getElementById('status').innerText = "Failed to connect";
+            }
+        }
+
+        function handleCharacteristicValueChanged(event) {
+            const value = new TextDecoder().decode(event.target.value);
+            document.getElementById('receivedValue').innerText = value;
+        }
+
+        async function sendMessage() {
+            const message = document.getElementById('messageInput').value;
+            if (characteristic && message) {
+                const encoder = new TextEncoder();
+                const value = encoder.encode(message);
+                await characteristic.writeValue(value);
+                document.getElementById('messageInput').value = ""; // Clear the input field
+            }
+        }
+
+        document.getElementById('connectButton').addEventListener('click', connectToBLE);
+        document.getElementById('sendButton').addEventListener('click', sendMessage);
+    </script>
+</body>
+</html>
+
