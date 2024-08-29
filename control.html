@@ -1,76 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BogieBot</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0", user-scalable=no>
+  <title>BogieBot</title>
+  <script src='joystick.js'></script>
+  <script src='ble.js'></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
 </head>
-<body>
-    <h1>BogieBot</h1>
-    <button id="connectButton">Connect to BogieBot</button>
-    <div id="status"></div>
-    <div>
-        <label for="messageInput">Message to send:</label>
-        <input type="text" id="messageInput" />
-        <button id="sendButton">Send</button>
-    </div>
-    <div>
-        <h3>Received Value:</h3>
-        <div id="receivedValue"></div>
-    </div>
+<body scroll="no" style="overflow: hidden;position: fixed; margin:0;">
+    <h1>BogieBot <i id='bt-status' class="fa fa-bluetooth"></i></h1>
+    <button id="connectButton"><span id='btn-text'>Connect</span></button>
 
-    <script>
-        const BOGIEBOT_BLE_SERVICE = "96f2414a-ab16-4aa4-8716-b7acfbac0adb";
-        const CMD_VEL = "8387ecb2-551e-4665-83e4-7f0fffd1f850";
+    <canvas id="cmd_vel" style="width:100%; bottom:0;"></canvas>
 
-        let bleDevice;
-        let characteristic;
-
-        async function connectToBLE() {
-            try {
-                // Request the device
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: [BOGIEBOT_BLE_SERVICE] }]
-                });
-
-                // Connect to the GATT server
-                const server = await bleDevice.gatt.connect();
-
-                // Get the service
-                const service = await server.getPrimaryService(BOGIEBOT_BLE_SERVICE);
-
-                // Get the characteristic
-                characteristic = await service.getCharacteristic(CMD_VEL);
-
-                // Setup event listener for receiving notifications
-                await characteristic.startNotifications();
-                characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
-
-                document.getElementById('status').innerText = "Connected to BogieBot";
-            } catch (error) {
-                console.error('Connection failed!', error);
-                document.getElementById('status').innerText = "Failed to connect";
-            }
-        }
-
-        function handleCharacteristicValueChanged(event) {
-            const value = new TextDecoder().decode(event.target.value);
-            document.getElementById('receivedValue').innerText = value;
-        }
-
-        async function sendMessage() {
-            const message = document.getElementById('messageInput').value;
-            if (characteristic && message) {
-                const encoder = new TextEncoder();
-                const value = encoder.encode(message);
-                await characteristic.writeValue(value);
-                document.getElementById('messageInput').value = ""; // Clear the input field
-            }
-        }
-
-        document.getElementById('connectButton').addEventListener('click', connectToBLE);
-        document.getElementById('sendButton').addEventListener('click', sendMessage);
-    </script>
 </body>
 </html>
+
+<script>
+</script>
+
+<script>
+
+window.addEventListener('load', () => {
+  const MAX_V = 0.5; // m/s
+  const MAX_A = 2*Math.PI; // rad/s
+  let ble = new BLEController();
+  let joystick = new Joystick(document.getElementById('cmd_vel'), (x,y)=>{
+    const linear = new Vector3(0,y*MAX_V,0);
+    const angular = new Vector3(0,0,x*MAX_A);
+    const twist = new Twist(linear, angular)
+    ble.send_cmd_vel(twist)
+  });
+})
+
+</script>
 
