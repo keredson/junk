@@ -43,6 +43,13 @@ class BLEController {
   bleDevice;
 
   connect = async () => {
+    if (this.connected) {
+      if (confirm("Disconnect from bot?")) {
+        this.bleDevice.gatt.disconnect();
+        this.connected = false
+      }
+      return;
+    }
       try {
           document.getElementById('btn-text').innerText = "Connecting...";
           document.getElementById('btn-text').disabled = true
@@ -50,6 +57,7 @@ class BLEController {
               filters: [{ services: [this.BOGIEBOT_BLE_SERVICE] }]
           });
           const server = await this.bleDevice.gatt.connect();
+          this.bleDevice.addEventListener('gattserverdisconnected', this.onDisconnected)
           const service = await server.getPrimaryService(this.BOGIEBOT_BLE_SERVICE);
           this.cmd_vel = await service.getCharacteristic(this.CMD_VEL);
           document.getElementById('btn-text').innerText = "Connected";
@@ -62,6 +70,13 @@ class BLEController {
           document.getElementById('btn-text').disabled = false
           document.getElementById('bt-status').color = "red";
       }
+  }
+  
+  onDisconnected = () => {
+    document.getElementById('bt-status').color = "black";
+    alert('Bot disconnected.');
+    document.getElementById('btn-text').innerText = "Connect";
+    document.getElementById('btn-text').disabled = false
   }
 
   send_cmd_vel = (twist) => {
